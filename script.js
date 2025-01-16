@@ -27,8 +27,14 @@ function preloadSFX(callback) {
     const totalSFX = sfx_name.length;
 
     sfx_name.forEach(item => {
+        // create sound object
         const audio = new Audio(`${BASE_SFX_PATH}/${item}.ogg`);
+
+        // sound object playability verification
         audio.oncanplaythrough = () => {
+            // assign the sound object under sfx object
+            sfx[item] = audio;
+
             loadedSFX++;
             if (loadedSFX === totalSFX) {
                 callback();
@@ -37,7 +43,6 @@ function preloadSFX(callback) {
         audio.onerror = () => {
             console.error(`Failed to load SFX: ${BASE_SFX_PATH}/${item}.ogg`);
         };
-        sfx[item] = audio;
     });
 }
 
@@ -48,12 +53,18 @@ const img_name = ['logo', 'ready', 'over', 'tap', 'start', 'land', 'pipe', 'boar
                   ['bird2', 3], ['medal', 4], ['small_num', 10], ['large_num', 10]];
 
 const imgs = {};
-let totalImages = 0;
 let loadedImages = 0;
+let totalImages = img_name.reduce((sum, item) => {
+    if (Array.isArray(item)) {
+        return sum + item[1];
+    }
+    return sum + 1;
+}, 0);
 
 function preloadImages(callback) {
     img_name.forEach(item => {
         if (Array.isArray(item)) {
+            // item is an array that contains image name and number
             const [key, count] = item;
             imgs[key] = [];
             for (let i = 0; i < count; i++) {
@@ -67,19 +78,23 @@ function preloadImages(callback) {
     });
 
     function loadSingleImage(src, key, callback, index = null) {
+        // create image object
         const img = new Image();
         img.src = src;
+
+        // image object displayability verification
         img.onload = () => {
+            // assign the image object under imgs object
             if (index !== null) {
                 imgs[key][index] = img;
             } else {
                 imgs[key] = img;
             }
+
             loadedImages++;
             if (loadedImages === totalImages) callback();
         };
         img.onerror = () => console.error(`Failed to load image: ${src}`);
-        totalImages++;
     }
 }
 
