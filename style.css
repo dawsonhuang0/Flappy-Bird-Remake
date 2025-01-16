@@ -1,0 +1,26 @@
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+}
+
+#game-canvas {
+    width: auto;
+    height: 95vh;
+    aspect-ratio: 9 / 16;
+    border: 2px solid red;
+}
+
+@media (max-aspect-ratio: 9 / 16) {
+    #game-canvas {
+        width: 100%;
+        height: auto;
+    }
+}
