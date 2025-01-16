@@ -15,15 +15,35 @@ function resizeCanvas() {
 }
 
 resizeCanvas();
-let resizeTimeout;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(resizeCanvas, 100);
-});
 
-// images initialization
-const BASE_PATH = 'img';
-const img_path = ['logo', 'ready', 'over', 'tap', 'start', 'land', 'pipe', 'board',
+// sound effects preparation
+const BASE_SFX_PATH = 'sfx';
+const sfx_name = ['wing', 'swooshing', 'point', 'hit', 'die'];
+
+const sfx = {};
+
+function preloadSFX(callback) {
+    let loadedSFX = 0;
+    const totalSFX = sfx_name.length;
+
+    sfx_name.forEach(item => {
+        const audio = new Audio(`${BASE_SFX_PATH}/${item}.ogg`);
+        audio.oncanplaythrough = () => {
+            loadedSFX++;
+            if (loadedSFX === totalSFX) {
+                callback();
+            }
+        };
+        audio.onerror = () => {
+            console.error(`Failed to load SFX: ${BASE_SFX_PATH}/${item}.ogg`);
+        };
+        sfx[item] = audio;
+    });
+}
+
+// images preparation
+const BASE_IMG_PATH = 'img';
+const img_name = ['logo', 'ready', 'over', 'tap', 'start', 'land', 'pipe', 'board',
                   'new', ['bg', 2], ['glitter', 3], ['bird0', 3], ['bird1', 3],
                   ['bird2', 3], ['medal', 4], ['small_num', 10], ['large_num', 10]];
 
@@ -32,16 +52,16 @@ let totalImages = 0;
 let loadedImages = 0;
 
 function preloadImages(callback) {
-    img_path.forEach(item => {
+    img_name.forEach(item => {
         if (Array.isArray(item)) {
             const [key, count] = item;
             imgs[key] = [];
             for (let i = 0; i < count; i++) {
-                const src = `${BASE_PATH}/${key}${i}.png`;
+                const src = `${BASE_IMG_PATH}/${key}${i}.png`;
                 loadSingleImage(src, key, callback, i);
             }
         } else {
-            const src = `${BASE_PATH}/${item}.png`;
+            const src = `${BASE_IMG_PATH}/${item}.png`;
             loadSingleImage(src, item, callback);
         }
     });
@@ -60,13 +80,6 @@ function preloadImages(callback) {
         };
         img.onerror = () => console.error(`Failed to load image: ${src}`);
         totalImages++;
-    }
-}
-
-function checkAllImagesLoaded(callback) {
-    if (loadedImages === totalImages) {
-        console.log('All Images Are Loaded');
-        callback();
     }
 }
 
@@ -199,17 +212,11 @@ let game_info = {
     land: {
         x0: 0,
         x1: -1.083,
-        frame: 0,
-        frame_interval: 1,
         move() {
-            if (this.frame >= this.frame_interval) {
-                this.x0 += 0.007;
-                this.x1 += 0.007;
-                if (this.x0 >= 1.083) this.x0 = -1.083;
-                if (this.x1 >= 1.083) this.x1 = -1.083;
-                this.frame = 0;
-            }
-            this.frame++;
+            this.x0 += 0.007;
+            this.x1 += 0.007;
+            if (this.x0 >= 1.083) this.x0 = -1.083;
+            if (this.x1 >= 1.083) this.x1 = -1.083;
         }
     }
 };
@@ -231,6 +238,8 @@ canvas.addEventListener('mousedown', (event) => {
             const start_y = (canvas.height - start_height) / 2 + canvas.height * 0.23;
             if ((start_x <= mouse_x && mouse_x <= start_x + start_width)
                 && (start_y <= mouse_y && mouse_y <= start_y + start_height)) {
+                sfx.swooshing.play();
+
                 let frame = 0;
                 const frame_interval = 20;
 
@@ -268,8 +277,12 @@ canvas.addEventListener('mousedown', (event) => {
     }
 });
 
-// game start
-preloadImages(() => {
-    randomCostume();
-    gameLoop();
+// game preparation
+preloadSFX(() => {
+    console.log('Sound Effects Loaded')
+    preloadImages(() => {
+        console.log('Images Loaded');
+        // game start
+        gameLoop();
+    });
 });
