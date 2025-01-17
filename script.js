@@ -183,9 +183,24 @@ function gamingPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
 
     game_info.bird.fall();
     game_info.bird.move();
-    game_info.bird.next_wing();
-    drawObject(imgs[`bird${game_info.bird.costume}`][game_info.bird.wing],
-               game_info.bird.x, game_info.bird.y);
+
+    if (game_info.bird.velocity > 0.008) {
+        game_info.bird.degree += (Math.PI / 2 - game_info.bird.degree) * 0.1;
+        game_info.bird.wing = 1;
+    } else {
+        game_info.bird.next_wing();
+        game_info.bird.degree += (-Math.PI / 10 - game_info.bird.degree) * 0.2;
+    }
+
+    ctx.save();
+    const {obj_x, obj_y, obj_width, obj_height}
+    = locateObject(imgs[`bird${game_info.bird.costume}`][game_info.bird.wing],
+                   game_info.bird.x, game_info.bird.y);
+    ctx.translate(obj_x + obj_width / 2, obj_y + obj_height / 2);
+    ctx.rotate(game_info.bird.degree);
+    ctx.drawImage(imgs[`bird${game_info.bird.costume}`][game_info.bird.wing],
+                  -obj_width / 2, -obj_height / 2, obj_width, obj_height);
+    ctx.restore();
 
     game_info.land.move();
     drawObject(imgs.land, game_info.land.x0, -0.391);
@@ -227,12 +242,14 @@ let game_info = {
         // physic properties
         x: 0,
         y: 0,
+        degree: 0,
         velocity: 0,
         max_velocity: 0.02,
         acceleration: 0.0006,
         flap_force: -0.0048,
         fly() {
             this.velocity = this.flap_force - this.acceleration * 10;
+
             sfx.wing.currentTime = 0;
             sfx.wing.play();
         },
@@ -246,10 +263,10 @@ let game_info = {
         move() {
             this.y -= this.velocity;
 
-            if (this.y < -0.28) {
-                this.y = -0.28;
-            } else if (this.y > 0.53) {
-                this.y = 0.53;
+            if (this.y < -0.26) {
+                this.y = -0.26;
+            } else if (this.y > 0.52) {
+                this.y = 0.52;
             }
         },
 
@@ -371,6 +388,7 @@ canvas.addEventListener('mousedown', (event) => {
             if (!game_info.pause_loop) {
                 game_info.pause_loop = true;
 
+                game_info.bird.frame_interval = 3;
                 game_info.pipe.y0 = -0.51 + Math.random() * 0.33;
                 game_info.pipe.y1 = -0.51 + Math.random() * 0.33;
                 game_info.stage = 'gaming';
