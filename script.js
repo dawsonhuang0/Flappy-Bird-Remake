@@ -48,8 +48,8 @@ function preloadSFX(callback) {
 
 // images preparation
 const BASE_IMG_PATH = 'img';
-const img_name = ['logo', 'ready', 'over', 'tap', 'start', 'land', 'pipe', 'board',
-                  'new', ['bg', 2], ['glitter', 3], ['bird0', 3], ['bird1', 3],
+const img_name = ['logo', 'ready', 'over', 'tap', 'start', 'land', 'board', 'new',
+                  ['bg', 2], ['pipe', 2], ['glitter', 3], ['bird0', 3], ['bird1', 3],
                   ['bird2', 3], ['medal', 4], ['small_num', 10], ['large_num', 10]];
 
 const imgs = {};
@@ -154,8 +154,8 @@ function initPage(tran = 0) {
 // draw get ready page
 function getReadyPage() {
     drawObject(imgs.bg[game_info.bg]);
-    drawObject(imgs.large_num[0], 0, 0.3);
-    drawObject(imgs.ready, 0, 0.13);
+    drawObject(imgs.large_num[0], 0, 0.35);
+    drawObject(imgs.ready, 0, 0.15);
     drawObject(imgs.tap, 0, -0.075);
     demoBird(-0.05);
 
@@ -166,10 +166,17 @@ function getReadyPage() {
 
 function gamingPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
     drawObject(imgs.bg[game_info.bg]);
-    drawObject(imgs.large_num[0], 0, 0.3);
+
+    game_info.pipe.move();
+    drawObject(imgs.pipe[0], game_info.pipe.x0, game_info.pipe.y0 + 0.8);
+    drawObject(imgs.pipe[1], game_info.pipe.x0, game_info.pipe.y0);
+    drawObject(imgs.pipe[0], game_info.pipe.x1, game_info.pipe.y1 + 0.8);
+    drawObject(imgs.pipe[1], game_info.pipe.x1, game_info.pipe.y1);
+
+    drawObject(imgs.large_num[0], 0, 0.35);
     if (tran === 1) {
         ctx.globalAlpha = 1 - tran_frame / tran_frame_interval;
-        drawObject(imgs.ready, 0, 0.13);
+        drawObject(imgs.ready, 0, 0.15);
         drawObject(imgs.tap, 0, -0.075);
         ctx.globalAlpha = 1;
     }
@@ -179,7 +186,7 @@ function gamingPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
     game_info.bird.next_wing();
     drawObject(imgs[`bird${game_info.bird.costume}`][game_info.bird.wing],
                game_info.bird.x, game_info.bird.y);
-    
+
     game_info.land.move();
     drawObject(imgs.land, game_info.land.x0, -0.391);
     drawObject(imgs.land, game_info.land.x1, -0.391);
@@ -226,6 +233,8 @@ let game_info = {
         flap_force: -0.0048,
         fly() {
             this.velocity = this.flap_force - this.acceleration * 10;
+            sfx.wing.currentTime = 0;
+            sfx.wing.play();
         },
         fall() {
             this.velocity += this.acceleration;
@@ -237,8 +246,8 @@ let game_info = {
         move() {
             this.y -= this.velocity;
 
-            if (this.y < -0.5) {
-                this.y = -0.5;
+            if (this.y < -0.28) {
+                this.y = -0.28;
             } else if (this.y > 0.53) {
                 this.y = 0.53;
             }
@@ -271,6 +280,24 @@ let game_info = {
         // demo bird property
         demo_direction_up: true
     },
+    pipe: {
+        x0: -1.59,
+        x1: -2.19,
+        y0: 0,
+        y1: 0,
+        move() {
+            this.x0 += 0.007;
+            this.x1 += 0.007;
+            if (this.x0 >= 0.59) {
+                this.x0 = -0.59;
+                this.y0 = -0.51 + Math.random() * 0.33;
+            }
+            if (this.x1 >= 0.59) {
+                this.x1 = -0.59;
+                this.y1 = -0.51 + Math.random() * 0.33;
+            }
+        }
+    },
     land: {
         x0: 0,
         x1: -1.083,
@@ -301,11 +328,13 @@ canvas.addEventListener('mousedown', (event) => {
             if (!game_info.pause_loop
                 && (start_x <= mouse_x && mouse_x <= start_x + start_width)
                 && (start_y <= mouse_y && mouse_y <= start_y + start_height)) {
+                game_info.pause_loop = true;
+
+                sfx.swooshing.currentTime = 0;
                 sfx.swooshing.play();
 
                 let frame = 0;
                 const frame_interval = 20;
-                game_info.pause_loop = true;
 
                 function pageFadeOut() {
                     if (frame <= frame_interval) {
@@ -340,12 +369,15 @@ canvas.addEventListener('mousedown', (event) => {
             break;
         case 'get_ready':
             if (!game_info.pause_loop) {
+                game_info.pause_loop = true;
+
+                game_info.pipe.y0 = -0.51 + Math.random() * 0.33;
+                game_info.pipe.y1 = -0.51 + Math.random() * 0.33;
                 game_info.stage = 'gaming';
                 game_info.bird.fly();
 
                 let frame = 0;
                 const frame_interval = 30;
-                game_info.pause_loop = true;
 
                 function elementFadeOut() {
                     if (frame <= frame_interval) {
@@ -357,7 +389,6 @@ canvas.addEventListener('mousedown', (event) => {
                         gameLoop();
                     }
                 }
-
                 elementFadeOut();
             }
             break;
