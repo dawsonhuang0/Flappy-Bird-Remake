@@ -24,3 +24,8 @@ body {
         height: auto;
     }
 }
+
+footer p {
+    user-select: none;
+    font-family: Arial, Helvetica, sans-serif;
+}

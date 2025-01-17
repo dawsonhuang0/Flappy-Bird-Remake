@@ -115,64 +115,78 @@ function drawObject(obj, offset_x_percent = 0, offset_y_percent = 0) {
 
 // set random background and random bird costume when stage changed
 function randomCostume() {
-    if (game_info.stage !== game_info.prev_stage) {
-        game_info.bg = Math.floor(Math.random() * 2);
-        game_info.bird.costume = Math.floor(Math.random() * 3);
-        game_info.prev_stage = game_info.stage;
-    }
+    game_info.bg = Math.floor(Math.random() * 2);
+    game_info.bird.costume = Math.floor(Math.random() * 3);
 }
 
 // demo bird animation
 function demoBird(base_y = 0, range = 0.012, step = 0.00056) {
-    if (game_info.bird.direction_up) {
+    if (game_info.bird.demo_direction_up) {
         game_info.bird.y += step;
         if (game_info.bird.y > base_y + range / 2) {
-            game_info.bird.direction_up = false;
+            game_info.bird.demo_direction_up = false;
             game_info.bird.y -= step;
         }
     } else {
         game_info.bird.y -= step;
         if (game_info.bird.y < base_y - range / 2) {
-            game_info.bird.direction_up = true;
+            game_info.bird.demo_direction_up = true;
             game_info.bird.y += step;
         }
     }
-
     game_info.bird.next_wing();
+    drawObject(imgs[`bird${game_info.bird.costume}`][game_info.bird.wing],
+               game_info.bird.x, game_info.bird.y);
 }
 
 // draw start page
 function initPage(tran = 0) {
-    demoBird();
-    game_info.land.move();
     drawObject(imgs.bg[game_info.bg]);
     drawObject(imgs.logo, 0, 0.2);
-    drawObject(imgs[`bird${game_info.bird.costume}`][game_info.bird.wing], game_info.bird.x,
-         game_info.bird.y);
+    demoBird();
     drawObject(imgs.start, 0, -0.23 - 0.007 * tran);
+
+    game_info.land.move();
     drawObject(imgs.land, game_info.land.x0, -0.391);
     drawObject(imgs.land, game_info.land.x1, -0.391);
 }
 
 // draw get ready page
 function getReadyPage() {
-    demoBird(-0.05);
-    game_info.land.move();
     drawObject(imgs.bg[game_info.bg]);
     drawObject(imgs.large_num[0], 0, 0.3);
     drawObject(imgs.ready, 0, 0.13);
     drawObject(imgs.tap, 0, -0.075);
-    drawObject(imgs[`bird${game_info.bird.costume}`][game_info.bird.wing], game_info.bird.x,
-         game_info.bird.y);
+    demoBird(-0.05);
+
+    game_info.land.move();
+    drawObject(imgs.land, game_info.land.x0, -0.391);
+    drawObject(imgs.land, game_info.land.x1, -0.391);
+}
+
+function gamingPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
+    drawObject(imgs.bg[game_info.bg]);
+    drawObject(imgs.large_num[0], 0, 0.3);
+    if (tran === 1) {
+        ctx.globalAlpha = 1 - tran_frame / tran_frame_interval;
+        drawObject(imgs.ready, 0, 0.13);
+        drawObject(imgs.tap, 0, -0.075);
+        ctx.globalAlpha = 1;
+    }
+
+    game_info.bird.fall();
+    game_info.bird.move();
+    game_info.bird.next_wing();
+    drawObject(imgs[`bird${game_info.bird.costume}`][game_info.bird.wing],
+               game_info.bird.x, game_info.bird.y);
+    
+    game_info.land.move();
     drawObject(imgs.land, game_info.land.x0, -0.391);
     drawObject(imgs.land, game_info.land.x1, -0.391);
 }
 
 // game loop
 function gameLoop() {
-    // get random costume and random background
-    if (game_info.stage !== 'gaming') randomCostume();
-
     // clear last frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -183,24 +197,54 @@ function gameLoop() {
         case 'get_ready':
             getReadyPage();
             break;
+        case 'gaming':
+            gamingPage();
+            break;
+        case 'game_over':
+            break;
         default:
             console.error(`ERROR: Unknown game stage: ${game_info.stage}`);
     }
 
-    requestAnimationFrame(gameLoop);
+    if (!game_info.pause_loop) requestAnimationFrame(gameLoop);
 }
 
 // game info initialization
 let game_info = {
+    pause_loop: false,
     stage: 'init',
-    prev_stage: '',
     score: 0,
     best_score: 0,
     bg: 0,
     bird: {
+        // physic properties
         x: 0,
         y: 0,
-        direction_up: true,
+        velocity: 0,
+        max_velocity: 0.02,
+        acceleration: 0.0006,
+        flap_force: -0.0048,
+        fly() {
+            this.velocity = this.flap_force - this.acceleration * 10;
+        },
+        fall() {
+            this.velocity += this.acceleration;
+
+            if (this.velocity > this.max_velocity) {
+                this.velocity = this.max_velocity;
+            }
+        },
+        move() {
+            this.y -= this.velocity;
+
+            if (this.y < -0.5) {
+                this.y = -0.5;
+            } else if (this.y > 0.53) {
+                this.y = 0.53;
+            }
+        },
+
+        // appearance
         costume: 0,
         wing: 0,
         backward_wing: false,
@@ -222,7 +266,10 @@ let game_info = {
                 this.frame = 0;
             }
             this.frame++;
-        }
+        },
+
+        // demo bird property
+        demo_direction_up: true
     },
     land: {
         x0: 0,
@@ -251,12 +298,14 @@ canvas.addEventListener('mousedown', (event) => {
             const start_height = (imgs.start.height / imgs.start.width) * start_width;
             const start_x = (canvas.width - start_width) / 2;
             const start_y = (canvas.height - start_height) / 2 + canvas.height * 0.23;
-            if ((start_x <= mouse_x && mouse_x <= start_x + start_width)
+            if (!game_info.pause_loop
+                && (start_x <= mouse_x && mouse_x <= start_x + start_width)
                 && (start_y <= mouse_y && mouse_y <= start_y + start_height)) {
                 sfx.swooshing.play();
 
                 let frame = 0;
                 const frame_interval = 20;
+                game_info.pause_loop = true;
 
                 function pageFadeOut() {
                     if (frame <= frame_interval) {
@@ -266,6 +315,7 @@ canvas.addEventListener('mousedown', (event) => {
                         frame++;
                         requestAnimationFrame(pageFadeOut);
                     } else {
+                        randomCostume();
                         game_info.bird.x = 0.19;
                         game_info.bird.y = -0.03;
                         game_info.stage = 'get_ready';
@@ -277,6 +327,9 @@ canvas.addEventListener('mousedown', (event) => {
                                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                                 frame++;
                                 requestAnimationFrame(pageFadeIn);
+                            } else {
+                                game_info.pause_loop = false;
+                                gameLoop();
                             }
                         }
                         pageFadeIn();
@@ -286,6 +339,30 @@ canvas.addEventListener('mousedown', (event) => {
             }
             break;
         case 'get_ready':
+            if (!game_info.pause_loop) {
+                game_info.stage = 'gaming';
+                game_info.bird.fly();
+
+                let frame = 0;
+                const frame_interval = 30;
+                game_info.pause_loop = true;
+
+                function elementFadeOut() {
+                    if (frame <= frame_interval) {
+                        gamingPage(1, frame, frame_interval);
+                        frame++;
+                        requestAnimationFrame(elementFadeOut);
+                    } else {
+                        game_info.pause_loop = false;
+                        gameLoop();
+                    }
+                }
+
+                elementFadeOut();
+            }
+            break;
+        case 'gaming':
+            game_info.bird.fly();
             break;
         default:
             console.error(`ERROR: Unknown game stage: ${game_info.stage}`);
@@ -298,6 +375,7 @@ preloadSFX(() => {
     preloadImages(() => {
         console.log('Images Loaded');
         // game start
+        randomCostume();
         gameLoop();
     });
 });
