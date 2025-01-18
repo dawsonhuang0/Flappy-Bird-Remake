@@ -53,15 +53,16 @@ const img_name = ['logo', 'ready', 'over', 'tap', 'start', 'land', 'board', 'new
                   ['bird2', 3], ['medal', 4], ['small_num', 10], ['large_num', 10]];
 
 const imgs = {};
-let loadedImages = 0;
-let totalImages = img_name.reduce((sum, item) => {
-    if (Array.isArray(item)) {
-        return sum + item[1];
-    }
-    return sum + 1;
-}, 0);
 
 function preloadImages(callback) {
+    let loadedImages = 0;
+    let totalImages = img_name.reduce((sum, item) => {
+        if (Array.isArray(item)) {
+            return sum + item[1];
+        }
+        return sum + 1;
+    }, 0);
+
     img_name.forEach(item => {
         if (Array.isArray(item)) {
             // item is an array that contains image name and number
@@ -113,6 +114,14 @@ function drawObject(obj, offset_x_percent = 0, offset_y_percent = 0) {
     ctx.drawImage(obj, obj_x, obj_y, obj_width, obj_height);
 }
 
+// check if overlap
+function isOverlap(rect0, rect1) {
+    return rect0.obj_x + rect0.obj_width > rect1.obj_x
+           && rect0.obj_x < rect1.obj_x + rect1.obj_width
+           && rect0.obj_y + rect0.obj_height > rect1.obj_y
+           && rect0.obj_y < rect1.obj_y + rect1.obj_height;
+}
+
 // set random background and random bird costume when stage changed
 function randomCostume() {
     game_info.bg = Math.floor(Math.random() * 2);
@@ -139,13 +148,43 @@ function demoBird(base_y = 0, range = 0.012, step = 0.00056) {
                game_info.bird.x, game_info.bird.y);
 }
 
+// draw score in gaming stage
+function drawLargeScore() {
+    const score = game_info.score.toString().split(''); 
+    const digits_width_offset = [6, 5, 5, 4, 5, 5, 4, 4, 5, 5];
+    const digits_width
+    = score.map(item => locateObject(imgs.large_num[parseInt(item)]).obj_width
+                                     - digits_width_offset[parseInt(item)]);
+
+    const total_width = digits_width.reduce((sum, width) => sum + width, 0);
+    let current_x = (canvas.width - total_width) / 2;
+
+    score.forEach((digit, index) => {
+        const digit_obj = imgs.large_num[parseInt(digit)];
+        const {obj_width, obj_height} = locateObject(digit_obj);
+
+        ctx.drawImage(digit_obj, current_x, canvas.height * 0.115, obj_width,
+                      obj_height);
+
+        current_x += digits_width[index];
+    });
+}
+
 // draw start page
 function initPage(tran = 0) {
+    // draw background
     drawObject(imgs.bg[game_info.bg]);
+
+    // draw logo
     drawObject(imgs.logo, 0, 0.2);
+
+    // draw demo bird
     demoBird();
+
+    // draw start button
     drawObject(imgs.start, 0, -0.23 - 0.007 * tran);
 
+    // draw land
     game_info.land.move();
     drawObject(imgs.land, game_info.land.x0, -0.391);
     drawObject(imgs.land, game_info.land.x1, -0.391);
@@ -153,12 +192,20 @@ function initPage(tran = 0) {
 
 // draw get ready page
 function getReadyPage() {
+    // draw background
     drawObject(imgs.bg[game_info.bg]);
+
+    // draw score
     drawObject(imgs.large_num[0], -0.008, 0.35);
+
+    // draw instructions
     drawObject(imgs.ready, 0, 0.15);
     drawObject(imgs.tap, 0, -0.075);
+
+    // draw demo bird
     demoBird(-0.05);
 
+    // draw land
     game_info.land.move();
     drawObject(imgs.land, game_info.land.x0, -0.391);
     drawObject(imgs.land, game_info.land.x1, -0.391);
@@ -166,6 +213,7 @@ function getReadyPage() {
 
 // draw gaming page
 function gamingPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
+    // draw background
     drawObject(imgs.bg[game_info.bg]);
     
     // transition
@@ -183,27 +231,7 @@ function gamingPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
     drawObject(imgs.pipe[0], game_info.pipe.x1, game_info.pipe.y1 + 0.8);
     drawObject(imgs.pipe[1], game_info.pipe.x1, game_info.pipe.y1);
 
-    // draw number
-    function drawLargeScore() {
-        const score = game_info.score.toString().split(''); 
-        const digits_width_offset = [6, 5, 5, 4, 5, 5, 4, 4, 5, 5];
-        const digits_width
-        = score.map(item => locateObject(imgs.large_num[parseInt(item)]).obj_width
-                                         - digits_width_offset[parseInt(item)]);
-
-        const total_width = digits_width.reduce((sum, width) => sum + width, 0);
-        let current_x = (canvas.width - total_width) / 2;
-
-        score.forEach((digit, index) => {
-            const digit_obj = imgs.large_num[parseInt(digit)];
-            const {obj_width, obj_height} = locateObject(digit_obj);
-
-            ctx.drawImage(digit_obj, current_x, canvas.height * 0.115, obj_width,
-                          obj_height);
-
-            current_x += digits_width[index];
-        });
-    }
+    // draw score
     drawLargeScore();
 
     // draw bird
@@ -232,6 +260,176 @@ function gamingPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
     game_info.land.move();
     drawObject(imgs.land, game_info.land.x0, -0.391);
     drawObject(imgs.land, game_info.land.x1, -0.391);
+
+    // check if bird collide with pipe
+    const bird_rect = locateObject(imgs[`bird${game_info.bird.costume}`][game_info.bird.wing],
+                                   game_info.bird.x, game_info.bird.y);
+    const pipe0_upper_rect = locateObject(imgs.pipe[0], game_info.pipe.x0, game_info.pipe.y0 + 0.8);
+    const pipe0_lower_rect = locateObject(imgs.pipe[1], game_info.pipe.x0, game_info.pipe.y0);
+    const pipe1_upper_rect = locateObject(imgs.pipe[0], game_info.pipe.x1, game_info.pipe.y1 + 0.8);
+    const pipe1_lower_rect = locateObject(imgs.pipe[1], game_info.pipe.x1, game_info.pipe.y1);
+
+    if (isOverlap(bird_rect, pipe0_upper_rect) || isOverlap(bird_rect, pipe0_lower_rect)
+        || isOverlap(bird_rect, pipe1_upper_rect) || isOverlap(bird_rect, pipe1_lower_rect)) {
+        gamingOver();
+    }
+}
+
+function gamingOver() {
+    game_info.pause_loop = true;
+    game_info.stage = 'game_over';
+
+    sfx.hit.currentTime = 0;
+    sfx.hit.play();
+
+    let frame = 0;
+    let frame_interval = 10;
+
+    function whiteFlashFadeOut() {
+        if (frame <= frame_interval) {
+            gameOverPage(1, frame, frame_interval);
+            frame++;
+            requestAnimationFrame(whiteFlashFadeOut);
+        } else {
+            game_info.bird.wing = 1;
+
+            function birdFall() {
+                if (game_info.bird.y > -0.26 || game_info.bird.degree < Math.PI / 2) {
+                    gameOverPage(2);
+                    requestAnimationFrame(birdFall);
+                } else {
+                    sfx.swooshing.currentTime = 0;
+                    sfx.swooshing.play();
+
+                    frame = 0;
+                    frame_interval = 20;
+
+                    function gameOverFadeIn() {
+                        if (frame <= frame_interval) {
+                            gameOverPage(3, frame, frame_interval);
+                            frame++;
+                            requestAnimationFrame(gameOverFadeIn);
+                        } else {
+                            setTimeout(() => {
+                                sfx.swooshing.currentTime = 0;
+                                sfx.swooshing.play();
+
+                                frame = 0;
+                                frame_interval = 40;
+
+                                function scoreBoardFlyIn() {
+                                    if (frame <= frame_interval) {
+                                        gameOverPage(4, frame, frame_interval);
+                                        frame++;
+                                        requestAnimationFrame(scoreBoardFlyIn);
+                                    } else {
+                                        setTimeout(() => {
+                                            game_info.pause_loop = false;
+                                            gameLoop();
+                                        }, 100);
+                                    }
+                                }
+
+                                scoreBoardFlyIn();
+                            }, 500);
+                        }
+                    }
+                    gameOverFadeIn();
+                }
+            }
+
+            if (game_info.bird.y > -0.26) {
+                sfx.die.currentTime = 0;
+                sfx.die.play();
+            }
+
+            birdFall();
+        }
+    }
+    whiteFlashFadeOut();
+}
+
+// draw game over page
+function gameOverPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
+    // draw background
+    drawObject(imgs.bg[game_info.bg]);
+
+    // draw pipe
+    drawObject(imgs.pipe[0], game_info.pipe.x0, game_info.pipe.y0 + 0.8);
+    drawObject(imgs.pipe[1], game_info.pipe.x0, game_info.pipe.y0);
+    drawObject(imgs.pipe[0], game_info.pipe.x1, game_info.pipe.y1 + 0.8);
+    drawObject(imgs.pipe[1], game_info.pipe.x1, game_info.pipe.y1);
+
+    // ensure bird is facing down while on the ground
+    if (tran === 1) {
+        // draw score
+        drawLargeScore();
+
+        if (game_info.bird.y === -0.26 && game_info.bird.degree < Math.PI / 2) {
+            if (game_info.bird.degree < Math.PI / 2) {
+                game_info.bird.degree += 0.1;
+            } else {
+                game_info.bird.degree = Math.PI / 2;
+            }
+        }
+    }
+
+    // bird falling onto the ground
+    if (tran === 2) {
+        // draw score
+        drawLargeScore();
+
+        game_info.bird.fall();
+        game_info.bird.move();
+
+        if (game_info.bird.degree < Math.PI / 2) {
+            game_info.bird.degree += 0.1;
+        } else {
+            game_info.bird.degree = Math.PI / 2;
+        }
+    }
+
+    // draw bird
+    ctx.save();
+    const {obj_x, obj_y, obj_width, obj_height}
+    = locateObject(imgs[`bird${game_info.bird.costume}`][game_info.bird.wing],
+                   game_info.bird.x, game_info.bird.y);
+    ctx.translate(obj_x + obj_width / 2, obj_y + obj_height / 2);
+    ctx.rotate(game_info.bird.degree);
+    ctx.drawImage(imgs[`bird${game_info.bird.costume}`][game_info.bird.wing],
+                  -obj_width / 2, -obj_height / 2, obj_width, obj_height);
+    ctx.restore();
+
+    // draw game over
+    if (tran === 0 || tran === 4) drawObject(imgs.over, 0, 0.2);
+    if (tran === 3) {
+        const half_frame_ratio = tran_frame / (tran_frame_interval / 2);
+        const is_HFR_over_1 = half_frame_ratio > 1;
+        ctx.globalAlpha = is_HFR_over_1? 1: half_frame_ratio;
+        drawObject(imgs.over, 0, 0.2 + 0.02 * (is_HFR_over_1? 2 - half_frame_ratio:
+                                              half_frame_ratio));
+        ctx.globalAlpha = 1;
+    }
+
+    // draw start button
+    if (tran === 0) drawObject(imgs.start, 0, -0.23);
+
+    // draw land
+    drawObject(imgs.land, game_info.land.x0, -0.391);
+    drawObject(imgs.land, game_info.land.x1, -0.391);
+
+    // draw score board
+    if (tran === 0) drawObject(imgs.board);
+    if (tran === 4) {
+        const progress = Math.min(tran_frame / tran_frame_interval, 1);
+        drawObject(imgs.board, 0, -Math.pow(1 - progress, 3));
+    }
+
+    // draw white flash
+    if (tran === 1) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${1 - tran_frame / tran_frame_interval})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 }
 
 // game loop
@@ -250,6 +448,7 @@ function gameLoop() {
             gamingPage();
             break;
         case 'game_over':
+            gameOverPage();
             break;
         default:
             console.error(`ERROR: Unknown game stage: ${game_info.stage}`);
@@ -292,6 +491,9 @@ let game_info = {
 
             if (this.y < -0.26) {
                 this.y = -0.26;
+                if (game_info.stage === 'gaming') {
+                    gamingOver();
+                }
             } else if (this.y > 0.52) {
                 this.y = 0.52;
             }
@@ -390,6 +592,7 @@ canvas.addEventListener('mousedown', (event) => {
                 && (start_x <= mouse_x && mouse_x <= start_x + start_width)
                 && (start_y <= mouse_y && mouse_y <= start_y + start_height)) {
                 game_info.pause_loop = true;
+                game_info.stage = 'get_ready';
 
                 sfx.swooshing.currentTime = 0;
                 sfx.swooshing.play();
@@ -408,7 +611,6 @@ canvas.addEventListener('mousedown', (event) => {
                         randomCostume();
                         game_info.bird.x = 0.19;
                         game_info.bird.y = -0.03;
-                        game_info.stage = 'get_ready';
 
                         function pageFadeIn() {
                             if (frame <= frame_interval * 2) {
@@ -431,11 +633,11 @@ canvas.addEventListener('mousedown', (event) => {
         case 'get_ready':
             if (!game_info.pause_loop) {
                 game_info.pause_loop = true;
+                game_info.stage = 'gaming';
 
                 game_info.bird.frame_interval = 3;
                 game_info.pipe.y0 = -0.51 + Math.random() * 0.33;
                 game_info.pipe.y1 = -0.51 + Math.random() * 0.33;
-                game_info.stage = 'gaming';
                 game_info.bird.fly();
 
                 let frame = 0;
