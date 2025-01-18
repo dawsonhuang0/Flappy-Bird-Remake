@@ -154,7 +154,7 @@ function initPage(tran = 0) {
 // draw get ready page
 function getReadyPage() {
     drawObject(imgs.bg[game_info.bg]);
-    drawObject(imgs.large_num[0], 0, 0.35);
+    drawObject(imgs.large_num[0], -0.008, 0.35);
     drawObject(imgs.ready, 0, 0.15);
     drawObject(imgs.tap, 0, -0.075);
     demoBird(-0.05);
@@ -164,16 +164,11 @@ function getReadyPage() {
     drawObject(imgs.land, game_info.land.x1, -0.391);
 }
 
+// draw gaming page
 function gamingPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
     drawObject(imgs.bg[game_info.bg]);
-
-    game_info.pipe.move();
-    drawObject(imgs.pipe[0], game_info.pipe.x0, game_info.pipe.y0 + 0.8);
-    drawObject(imgs.pipe[1], game_info.pipe.x0, game_info.pipe.y0);
-    drawObject(imgs.pipe[0], game_info.pipe.x1, game_info.pipe.y1 + 0.8);
-    drawObject(imgs.pipe[1], game_info.pipe.x1, game_info.pipe.y1);
-
-    drawObject(imgs.large_num[0], 0, 0.35);
+    
+    // transition
     if (tran === 1) {
         ctx.globalAlpha = 1 - tran_frame / tran_frame_interval;
         drawObject(imgs.ready, 0, 0.15);
@@ -181,11 +176,42 @@ function gamingPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
         ctx.globalAlpha = 1;
     }
 
+    // draw pipe
+    game_info.pipe.move();
+    drawObject(imgs.pipe[0], game_info.pipe.x0, game_info.pipe.y0 + 0.8);
+    drawObject(imgs.pipe[1], game_info.pipe.x0, game_info.pipe.y0);
+    drawObject(imgs.pipe[0], game_info.pipe.x1, game_info.pipe.y1 + 0.8);
+    drawObject(imgs.pipe[1], game_info.pipe.x1, game_info.pipe.y1);
+
+    // draw number
+    function drawLargeScore() {
+        const score = game_info.score.toString().split(''); 
+        const digits_width_offset = [6, 5, 5, 4, 5, 5, 4, 4, 5, 5];
+        const digits_width
+        = score.map(item => locateObject(imgs.large_num[parseInt(item)]).obj_width
+                                         - digits_width_offset[parseInt(item)]);
+
+        const total_width = digits_width.reduce((sum, width) => sum + width, 0);
+        let current_x = (canvas.width - total_width) / 2;
+
+        score.forEach((digit, index) => {
+            const digit_obj = imgs.large_num[parseInt(digit)];
+            const {obj_width, obj_height} = locateObject(digit_obj);
+
+            ctx.drawImage(digit_obj, current_x, canvas.height * 0.115, obj_width,
+                          obj_height);
+
+            current_x += digits_width[index];
+        });
+    }
+    drawLargeScore();
+
+    // draw bird
     game_info.bird.fall();
     game_info.bird.move();
 
     if (game_info.bird.velocity > 0.008) {
-        game_info.bird.degree += (Math.PI / 2 - game_info.bird.degree) * 0.1;
+        if (game_info.bird.degree < Math.PI / 2) game_info.bird.degree += 0.1;
         game_info.bird.wing = 1;
     } else {
         game_info.bird.next_wing();
@@ -202,6 +228,7 @@ function gamingPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
                   -obj_width / 2, -obj_height / 2, obj_width, obj_height);
     ctx.restore();
 
+    // draw land
     game_info.land.move();
     drawObject(imgs.land, game_info.land.x0, -0.391);
     drawObject(imgs.land, game_info.land.x1, -0.391);
@@ -302,16 +329,33 @@ let game_info = {
         x1: -2.19,
         y0: 0,
         y1: 0,
+        score0: 1,
+        score1: 1,
         move() {
             this.x0 += 0.007;
             this.x1 += 0.007;
             if (this.x0 >= 0.59) {
                 this.x0 = -0.59;
                 this.y0 = -0.51 + Math.random() * 0.33;
+                this.score0 = 1;
             }
             if (this.x1 >= 0.59) {
                 this.x1 = -0.59;
                 this.y1 = -0.51 + Math.random() * 0.33;
+                this.score1 = 1;
+            }
+
+            if (this.x0 > 0.19 && this.score0 > 0) {
+                game_info.score += this.score0;
+                this.score0 = 0;
+                sfx.point.currentTime = 0;
+                sfx.point.play();
+            }
+            if (this.x1 > 0.19 && this.score1 > 0) {
+                game_info.score += this.score1;
+                this.score1 = 0;
+                sfx.point.currentTime = 0;
+                sfx.point.play();
             }
         }
     },
