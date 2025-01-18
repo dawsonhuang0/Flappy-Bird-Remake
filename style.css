@@ -13,7 +13,7 @@ body {
 
 #game-canvas {
     width: auto;
-    height: 95vh;
+    height: 98vh;
     aspect-ratio: 9 / 16;
     border: 2px solid red;
 }
@@ -26,6 +26,10 @@ body {
 }
 
 footer p {
+    max-width: calc(98vh * (9 / 16));
+    width: 100%;
     user-select: none;
     font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    text-align: center;
 }
