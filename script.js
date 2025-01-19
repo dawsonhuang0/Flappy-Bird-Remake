@@ -433,7 +433,12 @@ function gameOverPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
 }
 
 // game loop
-function gameLoop() {
+function gameLoop(timestamp) {
+    // ensure 60 FPS
+    if (!game_info.last_timestamp) game_info.last_timestamp = timestamp;
+    game_info.delta_time = (timestamp - game_info.last_timestamp) / 1000 || 1 / 60;
+    game_info.last_timestamp = timestamp;
+
     // clear last frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -459,6 +464,11 @@ function gameLoop() {
 
 // game info initialization
 let game_info = {
+    // refresh rate properties
+    last_timestamp: 0,
+    delta_time: 0,
+
+    // basic properties
     pause_loop: false,
     stage: 'init',
     score: 0,
@@ -487,7 +497,7 @@ let game_info = {
             }
         },
         move() {
-            this.y -= this.velocity;
+            this.y -= this.velocity * game_info.delta_time * 60;
 
             if (this.y < -0.26) {
                 this.y = -0.26;
@@ -520,7 +530,7 @@ let game_info = {
                 }
                 this.frame = 0;
             }
-            this.frame++;
+            this.frame += game_info.delta_time * 60;
         },
 
         // demo bird property
@@ -534,8 +544,8 @@ let game_info = {
         score0: 1,
         score1: 1,
         move() {
-            this.x0 += 0.007;
-            this.x1 += 0.007;
+            this.x0 += 0.007 * game_info.delta_time * 60;
+            this.x1 += 0.007 * game_info.delta_time * 60;
             if (this.x0 >= 0.59) {
                 this.x0 = -0.59;
                 this.y0 = -0.51 + Math.random() * 0.33;
@@ -565,8 +575,8 @@ let game_info = {
         x0: 0,
         x1: -1.083,
         move() {
-            this.x0 += 0.007;
-            this.x1 += 0.007;
+            this.x0 += 0.007 * game_info.delta_time * 60;
+            this.x1 += 0.007 * game_info.delta_time * 60;
             if (this.x0 >= 1.083) this.x0 = -1.083;
             if (this.x1 >= 1.083) this.x1 = -1.083;
         }
