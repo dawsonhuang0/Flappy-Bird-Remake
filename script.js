@@ -28,7 +28,7 @@ function preloadSFX(callback) {
 
     sfx_name.forEach(item => {
         // create sound object
-        const audio = new Audio(`${BASE_SFX_PATH}/${item}.ogg`);
+        const audio = new Audio(`${BASE_SFX_PATH}/${item}.mp3`);
 
         // sound object playability verification
         audio.oncanplaythrough = () => {
@@ -41,7 +41,7 @@ function preloadSFX(callback) {
             }
         };
         audio.onerror = () => {
-            console.error(`Failed to load SFX: ${BASE_SFX_PATH}/${item}.ogg`);
+            console.error(`Failed to load SFX: ${BASE_SFX_PATH}/${item}.mp3`);
         };
     });
 }
