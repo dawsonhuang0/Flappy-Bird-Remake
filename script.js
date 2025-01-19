@@ -583,7 +583,7 @@ let game_info = {
 };
 
 // detect interactive event
-canvas.addEventListener('mousedown', (event) => {
+canvas.addEventListener('pointerdown', (event) => {
     const rect = canvas.getBoundingClientRect();
     const scale_x = canvas.width / rect.width;
     const scale_y = canvas.height / rect.height;
