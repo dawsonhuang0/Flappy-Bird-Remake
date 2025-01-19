@@ -131,16 +131,16 @@ function randomCostume() {
 // demo bird animation
 function demoBird(base_y = 0, range = 0.012, step = 0.00056) {
     if (game_info.bird.demo_direction_up) {
-        game_info.bird.y += step;
+        game_info.bird.y += step * game_info.delta_time * 60;
         if (game_info.bird.y > base_y + range / 2) {
             game_info.bird.demo_direction_up = false;
-            game_info.bird.y -= step;
+            game_info.bird.y -= step * game_info.delta_time * 60;
         }
     } else {
-        game_info.bird.y -= step;
+        game_info.bird.y -= step * game_info.delta_time * 60;
         if (game_info.bird.y < base_y - range / 2) {
             game_info.bird.demo_direction_up = true;
-            game_info.bird.y += step;
+            game_info.bird.y += step * game_info.delta_time * 60;
         }
     }
     game_info.bird.next_wing();
