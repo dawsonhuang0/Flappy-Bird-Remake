@@ -490,7 +490,7 @@ let game_info = {
             sfx.wing.play();
         },
         fall() {
-            this.velocity += this.acceleration;
+            this.velocity += this.acceleration * game_info.delta_time * 60;
 
             if (this.velocity > this.max_velocity) {
                 this.velocity = this.max_velocity;
