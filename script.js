@@ -115,11 +115,67 @@ function drawObject(obj, offset_x_percent = 0, offset_y_percent = 0) {
 }
 
 // check if overlap
-function isOverlap(rect0, rect1) {
-    return rect0.obj_x + rect0.obj_width > rect1.obj_x
-           && rect0.obj_x < rect1.obj_x + rect1.obj_width
-           && rect0.obj_y + rect0.obj_height > rect1.obj_y
-           && rect0.obj_y < rect1.obj_y + rect1.obj_height;
+function isOverlap(rect0, rect1, rotationDegree0 = 0, rotationDegree1 = 0) {
+    // Function to get the corners of a rotated rectangle
+    function getRotatedCorners(x, y, width, height, degree) {
+        const cx = x + width / 2; // Center X
+        const cy = y + height / 2; // Center Y
+        const rad = degree * (Math.PI / 180); // Convert degree to radians
+
+        // Define corners relative to the center
+        const corners = [
+            { x: -width / 2, y: -height / 2 },
+            { x: width / 2, y: -height / 2 },
+            { x: width / 2, y: height / 2 },
+            { x: -width / 2, y: height / 2 }
+        ];
+
+        // Rotate and translate corners
+        return corners.map(corner => ({
+            x: cx + corner.x * Math.cos(rad) - corner.y * Math.sin(rad),
+            y: cy + corner.x * Math.sin(rad) + corner.y * Math.cos(rad)
+        }));
+    }
+
+    // Function to project a rectangle's corners onto an axis
+    function projectOntoAxis(corners, axis) {
+        return corners.map(corner => corner.x * axis.x + corner.y * axis.y);
+    }
+
+    // Check if there is a gap between projections
+    function hasGap(projection1, projection2) {
+        const min1 = Math.min(...projection1);
+        const max1 = Math.max(...projection1);
+        const min2 = Math.min(...projection2);
+        const max2 = Math.max(...projection2);
+        return max1 < min2 || max2 < min1;
+    }
+
+    // Get corners for both rectangles
+    const corners0 = getRotatedCorners(rect0.obj_x, rect0.obj_y, rect0.obj_width, rect0.obj_height, rotationDegree0);
+    const corners1 = getRotatedCorners(rect1.obj_x, rect1.obj_y, rect1.obj_width, rect1.obj_height, rotationDegree1);
+
+    // Get edges (axes for projection) from corners
+    const axes0 = corners0.map((corner, i) => {
+        const nextCorner = corners0[(i + 1) % corners0.length];
+        return { x: -(nextCorner.y - corner.y), y: nextCorner.x - corner.x };
+    });
+    const axes1 = corners1.map((corner, i) => {
+        const nextCorner = corners1[(i + 1) % corners1.length];
+        return { x: -(nextCorner.y - corner.y), y: nextCorner.x - corner.x };
+    });
+
+    // Check all axes for gaps
+    const axes = [...axes0, ...axes1];
+    for (const axis of axes) {
+        const projection0 = projectOntoAxis(corners0, axis);
+        const projection1 = projectOntoAxis(corners1, axis);
+        if (hasGap(projection0, projection1)) {
+            return false; // A gap means no collision
+        }
+    }
+
+    return true; // No gaps found, so there is a collision
 }
 
 // set random background and random bird costume when stage changed
@@ -269,8 +325,10 @@ function gamingPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
     const pipe1_upper_rect = locateObject(imgs.pipe[0], game_info.pipe.x1, game_info.pipe.y1 + 0.8);
     const pipe1_lower_rect = locateObject(imgs.pipe[1], game_info.pipe.x1, game_info.pipe.y1);
 
-    if (isOverlap(bird_rect, pipe0_upper_rect) || isOverlap(bird_rect, pipe0_lower_rect)
-        || isOverlap(bird_rect, pipe1_upper_rect) || isOverlap(bird_rect, pipe1_lower_rect)) {
+    if (isOverlap(bird_rect, pipe0_upper_rect, game_info.bird.degree * (180 / Math.PI))
+        || isOverlap(bird_rect, pipe0_lower_rect, game_info.bird.degree * (180 / Math.PI))
+        || isOverlap(bird_rect, pipe1_upper_rect, game_info.bird.degree * (180 / Math.PI))
+        || isOverlap(bird_rect, pipe1_lower_rect, game_info.bird.degree * (180 / Math.PI))) {
         gamingOver();
     }
 }
@@ -583,7 +641,7 @@ let game_info = {
 };
 
 // detect interactive event
-canvas.addEventListener('pointerdown', (event) => {
+function initPageInteraction() {
     const rect = canvas.getBoundingClientRect();
     const scale_x = canvas.width / rect.width;
     const scale_y = canvas.height / rect.height;
@@ -591,54 +649,61 @@ canvas.addEventListener('pointerdown', (event) => {
     const mouse_x = (event.clientX - rect.left) * scale_x;
     const mouse_y = (event.clientY - rect.top) * scale_y;
 
-    switch (game_info.stage) {
-        case 'init':
-            const start_width = canvas.width * imgs.start.width / 288;
-            const start_height = (imgs.start.height / imgs.start.width) * start_width;
-            const start_x = (canvas.width - start_width) / 2;
-            const start_y = (canvas.height - start_height) / 2 + canvas.height * 0.23;
-            if (!game_info.pause_loop
-                && (start_x <= mouse_x && mouse_x <= start_x + start_width)
-                && (start_y <= mouse_y && mouse_y <= start_y + start_height)) {
-                game_info.pause_loop = true;
-                game_info.stage = 'get_ready';
+    if (game_info.stage === 'init') {
+        const start_width = canvas.width * imgs.start.width / 288;
+        const start_height = (imgs.start.height / imgs.start.width) * start_width;
+        const start_x = (canvas.width - start_width) / 2;
+        const start_y = (canvas.height - start_height) / 2 + canvas.height * 0.23;
+        if (!game_info.pause_loop
+            && (start_x <= mouse_x && mouse_x <= start_x + start_width)
+            && (start_y <= mouse_y && mouse_y <= start_y + start_height)) {
+            game_info.pause_loop = true;
+            game_info.stage = 'get_ready';
 
-                sfx.swooshing.currentTime = 0;
-                sfx.swooshing.play();
+            sfx.swooshing.currentTime = 0;
+            sfx.swooshing.play();
 
-                let frame = 0;
-                const frame_interval = 20;
+            let frame = 0;
+            const frame_interval = 20;
 
-                function pageFadeOut() {
-                    if (frame <= frame_interval) {
-                        initPage(1);
-                        ctx.fillStyle = `rgba(0, 0, 0, ${frame / frame_interval})`;
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        frame += game_info.delta_time * 60;
-                        requestAnimationFrame(pageFadeOut);
-                    } else {
-                        randomCostume();
-                        game_info.bird.x = 0.19;
-                        game_info.bird.y = -0.03;
+            function pageFadeOut() {
+                if (frame <= frame_interval) {
+                    initPage(1);
+                    ctx.fillStyle = `rgba(0, 0, 0, ${frame / frame_interval})`;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    frame += game_info.delta_time * 60;
+                    requestAnimationFrame(pageFadeOut);
+                } else {
+                    randomCostume();
+                    game_info.bird.x = 0.19;
+                    game_info.bird.y = -0.03;
 
-                        function pageFadeIn() {
-                            if (frame <= frame_interval * 2) {
-                                getReadyPage();
-                                ctx.fillStyle = `rgba(0, 0, 0, ${2 - frame / frame_interval})`;
-                                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                                frame += game_info.delta_time * 60;
-                                requestAnimationFrame(pageFadeIn);
-                            } else {
-                                game_info.pause_loop = false;
-                                gameLoop();
-                            }
+                    function pageFadeIn() {
+                        if (frame <= frame_interval * 2) {
+                            getReadyPage();
+                            ctx.fillStyle = `rgba(0, 0, 0, ${2 - frame / frame_interval})`;
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            frame += game_info.delta_time * 60;
+                            requestAnimationFrame(pageFadeIn);
+                        } else {
+                            canvas.removeEventListener('mousedown', initPageInteraction);
+                            canvas.addEventListener('pointerdown', otherInteraction);
+                            game_info.pause_loop = false;
+                            gameLoop();
                         }
-                        pageFadeIn();
                     }
+                    pageFadeIn();
                 }
-                pageFadeOut();
             }
-            break;
+            pageFadeOut();
+        }
+    } else {
+        console.error(`ERROR: Unknown game stage: ${game_info.stage}`);
+    }
+}
+
+function otherInteraction() {
+    switch (game_info.stage) {
         case 'get_ready':
             if (!game_info.pause_loop) {
                 game_info.pause_loop = true;
@@ -671,7 +736,9 @@ canvas.addEventListener('pointerdown', (event) => {
         default:
             console.error(`ERROR: Unknown game stage: ${game_info.stage}`);
     }
-});
+}
+
+canvas.addEventListener('mousedown', initPageInteraction);
 
 // game preparation
 preloadSFX(() => {
