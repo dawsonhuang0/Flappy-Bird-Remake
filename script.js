@@ -288,7 +288,7 @@ function gamingOver() {
     function whiteFlashFadeOut() {
         if (frame <= frame_interval) {
             gameOverPage(1, frame, frame_interval);
-            frame++;
+            frame += game_info.delta_time * 60;
             requestAnimationFrame(whiteFlashFadeOut);
         } else {
             game_info.bird.wing = 1;
@@ -307,7 +307,7 @@ function gamingOver() {
                     function gameOverFadeIn() {
                         if (frame <= frame_interval) {
                             gameOverPage(3, frame, frame_interval);
-                            frame++;
+                            frame += game_info.delta_time * 60;
                             requestAnimationFrame(gameOverFadeIn);
                         } else {
                             setTimeout(() => {
@@ -320,7 +320,7 @@ function gamingOver() {
                                 function scoreBoardFlyIn() {
                                     if (frame <= frame_interval) {
                                         gameOverPage(4, frame, frame_interval);
-                                        frame++;
+                                        frame += game_info.delta_time * 60;
                                         requestAnimationFrame(scoreBoardFlyIn);
                                     } else {
                                         setTimeout(() => {
@@ -482,15 +482,14 @@ let game_info = {
         velocity: 0,
         max_velocity: 0.02,
         acceleration: 0.0006,
-        flap_force: -0.0048,
         fly() {
-            this.velocity = this.flap_force - this.acceleration * 10;
+            this.velocity = -0.0108;
 
             sfx.wing.currentTime = 0;
             sfx.wing.play();
         },
         fall() {
-            this.velocity += this.acceleration * game_info.delta_time * 60;
+            this.velocity += this.acceleration;
 
             if (this.velocity > this.max_velocity) {
                 this.velocity = this.max_velocity;
@@ -615,7 +614,7 @@ canvas.addEventListener('mousedown', (event) => {
                         initPage(1);
                         ctx.fillStyle = `rgba(0, 0, 0, ${frame / frame_interval})`;
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        frame++;
+                        frame += game_info.delta_time * 60;
                         requestAnimationFrame(pageFadeOut);
                     } else {
                         randomCostume();
@@ -627,7 +626,7 @@ canvas.addEventListener('mousedown', (event) => {
                                 getReadyPage();
                                 ctx.fillStyle = `rgba(0, 0, 0, ${2 - frame / frame_interval})`;
                                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                                frame++;
+                                frame += game_info.delta_time * 60;
                                 requestAnimationFrame(pageFadeIn);
                             } else {
                                 game_info.pause_loop = false;
@@ -656,7 +655,7 @@ canvas.addEventListener('mousedown', (event) => {
                 function elementFadeOut() {
                     if (frame <= frame_interval) {
                         gamingPage(1, frame, frame_interval);
-                        frame++;
+                        frame += game_info.delta_time * 60;
                         requestAnimationFrame(elementFadeOut);
                     } else {
                         game_info.pause_loop = false;
