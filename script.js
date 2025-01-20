@@ -282,9 +282,9 @@ function gamingPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
 
     // draw pipe
     game_info.pipe.move();
-    drawObject(imgs.pipe[0], game_info.pipe.x0, game_info.pipe.y0 + 0.8);
+    drawObject(imgs.pipe[0], game_info.pipe.x0, game_info.pipe.y0 + 0.82);
     drawObject(imgs.pipe[1], game_info.pipe.x0, game_info.pipe.y0);
-    drawObject(imgs.pipe[0], game_info.pipe.x1, game_info.pipe.y1 + 0.8);
+    drawObject(imgs.pipe[0], game_info.pipe.x1, game_info.pipe.y1 + 0.82);
     drawObject(imgs.pipe[1], game_info.pipe.x1, game_info.pipe.y1);
 
     // draw score
@@ -320,9 +320,9 @@ function gamingPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
     // check if bird collide with pipe
     const bird_rect = locateObject(imgs[`bird${game_info.bird.costume}`][game_info.bird.wing],
                                    game_info.bird.x, game_info.bird.y);
-    const pipe0_upper_rect = locateObject(imgs.pipe[0], game_info.pipe.x0, game_info.pipe.y0 + 0.8);
+    const pipe0_upper_rect = locateObject(imgs.pipe[0], game_info.pipe.x0, game_info.pipe.y0 + 0.82);
     const pipe0_lower_rect = locateObject(imgs.pipe[1], game_info.pipe.x0, game_info.pipe.y0);
-    const pipe1_upper_rect = locateObject(imgs.pipe[0], game_info.pipe.x1, game_info.pipe.y1 + 0.8);
+    const pipe1_upper_rect = locateObject(imgs.pipe[0], game_info.pipe.x1, game_info.pipe.y1 + 0.82);
     const pipe1_lower_rect = locateObject(imgs.pipe[1], game_info.pipe.x1, game_info.pipe.y1);
 
     if (isOverlap(bird_rect, pipe0_upper_rect, game_info.bird.degree * (180 / Math.PI))
@@ -413,9 +413,9 @@ function gameOverPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
     drawObject(imgs.bg[game_info.bg]);
 
     // draw pipe
-    drawObject(imgs.pipe[0], game_info.pipe.x0, game_info.pipe.y0 + 0.8);
+    drawObject(imgs.pipe[0], game_info.pipe.x0, game_info.pipe.y0 + 0.82);
     drawObject(imgs.pipe[1], game_info.pipe.x0, game_info.pipe.y0);
-    drawObject(imgs.pipe[0], game_info.pipe.x1, game_info.pipe.y1 + 0.8);
+    drawObject(imgs.pipe[0], game_info.pipe.x1, game_info.pipe.y1 + 0.82);
     drawObject(imgs.pipe[1], game_info.pipe.x1, game_info.pipe.y1);
 
     // ensure bird is facing down while on the ground
@@ -605,12 +605,12 @@ let game_info = {
             this.x1 += 0.007 * game_info.delta_time * 60;
             if (this.x0 >= 0.59) {
                 this.x0 = -0.59;
-                this.y0 = -0.51 + Math.random() * 0.33;
+                this.y0 = -0.51 + Math.random() * 0.31;
                 this.score0 = 1;
             }
             if (this.x1 >= 0.59) {
                 this.x1 = -0.59;
-                this.y1 = -0.51 + Math.random() * 0.33;
+                this.y1 = -0.51 + Math.random() * 0.31;
                 this.score1 = 1;
             }
 
@@ -710,8 +710,8 @@ function otherInteraction() {
                 game_info.stage = 'gaming';
 
                 game_info.bird.frame_interval = 3;
-                game_info.pipe.y0 = -0.51 + Math.random() * 0.33;
-                game_info.pipe.y1 = -0.51 + Math.random() * 0.33;
+                game_info.pipe.y0 = -0.51 + Math.random() * 0.31;
+                game_info.pipe.y1 = -0.51 + Math.random() * 0.31;
                 game_info.bird.fly();
 
                 let frame = 0;
