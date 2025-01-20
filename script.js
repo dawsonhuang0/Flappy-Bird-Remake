@@ -541,20 +541,20 @@ let game_info = {
         max_velocity: 0.02,
         acceleration: 0.0006,
         fly() {
-            this.velocity = -0.0108 * game_info.delta_time;
+            this.velocity = -0.0108;
 
             sfx.wing.currentTime = 0;
             sfx.wing.play();
         },
         fall() {
-            this.velocity += this.acceleration * game_info.delta_time;
+            this.velocity += this.acceleration;
 
             if (this.velocity > this.max_velocity) {
                 this.velocity = this.max_velocity;
             }
         },
         move() {
-            this.y -= this.velocity * 60;
+            this.y -= this.velocity * game_info.delta_time * 30;
 
             if (this.y < -0.26) {
                 this.y = -0.26;
