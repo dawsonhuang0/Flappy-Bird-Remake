@@ -15,7 +15,6 @@ function resizeCanvas() {
 }
 
 resizeCanvas();
-console.log(`${canvas.width}, ${canvas.height}`);
 
 // sound effects preparation
 const BASE_SFX_PATH = 'sfx';
@@ -485,6 +484,24 @@ function gameOverPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
         drawObject(imgs.board, 0, -Math.pow(1 - progress, 3));
     }
 
+    // draw medal
+    if ((tran === 0 || tran === 5) && game_info.score >= 10) {
+        const level = game_info.score < 20? 0:
+                      game_info.score < 30? 1:
+                      game_info.score < 40? 2: 3;
+        drawObject(imgs.medal[level], 0.226, -0.01);
+
+        if (game_info.glitter.costume === 0 && !(game_info.glitter.is_costume_increasing)) {
+            game_info.glitter.x = 0.13 + Math.random() * 0.19;
+            game_info.glitter.y = 0.044 - Math.random() * 0.105;
+            game_info.glitter.is_costume_increasing = true;
+        }
+
+        drawObject(imgs.glitter[game_info.glitter.costume], game_info.glitter.x, game_info.glitter.y);
+
+        game_info.glitter.next_glitter();
+    }
+
     // draw white flash
     if (tran === 1) {
         ctx.fillStyle = `rgba(255, 255, 255, ${1 - tran_frame / tran_frame_interval})`;
@@ -531,7 +548,7 @@ let game_info = {
     // basic properties
     pause_loop: false,
     stage: 'init',
-    score: 0,
+    score: 40,
     best_score: 0,
     bg: 0,
     bird: {
@@ -639,6 +656,28 @@ let game_info = {
             this.x1 += 0.007 * game_info.delta_time * 60;
             if (this.x0 >= 1.083) this.x0 = -1.083;
             if (this.x1 >= 1.083) this.x1 = -1.083;
+        }
+    },
+    glitter: {
+        x: 0,
+        y: 0,
+        costume: 0,
+        is_costume_increasing: false,
+        frame: 0,
+        frame_interval: 7,
+        next_glitter() {
+            if (this.frame >= this.frame_interval) {
+                if (this.is_costume_increasing) {
+                    this.costume++;
+                    if (this.costume >= 2) {
+                        this.is_costume_increasing = false;
+                    }
+                } else {
+                    this.costume--;
+                }
+                this.frame = 0;
+            }
+            this.frame += game_info.delta_time * 60;
         }
     }
 };
