@@ -460,7 +460,7 @@ function gameOverPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
     ctx.restore();
 
     // draw game over
-    if (tran === 0 || tran === 4) drawObject(imgs.over, 0, 0.2);
+    if (tran === 0 || tran === 4 || tran === 5) drawObject(imgs.over, 0, 0.2);
     if (tran === 3) {
         const half_frame_ratio = tran_frame / (tran_frame_interval / 2);
         const is_HFR_over_1 = half_frame_ratio > 1;
@@ -472,13 +472,14 @@ function gameOverPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
 
     // draw start button
     if (tran === 0) drawObject(imgs.start, 0, -0.23);
+    if (tran === 5) drawObject(imgs.start, 0, -0.237);
 
     // draw land
     drawObject(imgs.land, game_info.land.x0, -0.391);
     drawObject(imgs.land, game_info.land.x1, -0.391);
 
     // draw score board
-    if (tran === 0) drawObject(imgs.board);
+    if (tran === 0 || tran === 5) drawObject(imgs.board);
     if (tran === 4) {
         const progress = Math.min(tran_frame / tran_frame_interval, 1);
         drawObject(imgs.board, 0, -Math.pow(1 - progress, 3));
@@ -542,20 +543,20 @@ let game_info = {
         max_velocity: 0.02,
         acceleration: 0.0006,
         fly() {
-            this.velocity = -0.0108;
+            this.velocity = -0.0108 * game_info.delta_time * 60;
 
             sfx.wing.currentTime = 0;
             sfx.wing.play();
         },
         fall() {
-            this.velocity += this.acceleration;
+            this.velocity += this.acceleration * game_info.delta_time * 60;
 
             if (this.velocity > this.max_velocity) {
                 this.velocity = this.max_velocity;
             }
         },
         move() {
-            this.y -= this.velocity * game_info.delta_time * 60;
+            this.y -= this.velocity;
 
             if (this.y < -0.26) {
                 this.y = -0.26;
@@ -643,7 +644,7 @@ let game_info = {
 };
 
 // detect interactive event
-function initPageInteraction() {
+function initPageInteraction(event) {
     const rect = canvas.getBoundingClientRect();
     const scale_x = canvas.width / rect.width;
     const scale_y = canvas.height / rect.height;
@@ -656,6 +657,7 @@ function initPageInteraction() {
         const start_height = (imgs.start.height / imgs.start.width) * start_width;
         const start_x = (canvas.width - start_width) / 2;
         const start_y = (canvas.height - start_height) / 2 + canvas.height * 0.23;
+
         if (!game_info.pause_loop
             && (start_x <= mouse_x && mouse_x <= start_x + start_width)
             && (start_y <= mouse_y && mouse_y <= start_y + start_height)) {
@@ -704,7 +706,14 @@ function initPageInteraction() {
     }
 }
 
-function otherInteraction() {
+function otherInteraction(event) {
+    const rect = canvas.getBoundingClientRect();
+    const scale_x = canvas.width / rect.width;
+    const scale_y = canvas.height / rect.height;
+
+    const mouse_x = (event.clientX - rect.left) * scale_x;
+    const mouse_y = (event.clientY - rect.top) * scale_y;
+
     switch (game_info.stage) {
         case 'get_ready':
             if (!game_info.pause_loop) {
@@ -734,6 +743,62 @@ function otherInteraction() {
             break;
         case 'gaming':
             game_info.bird.fly();
+            break;
+        case 'game_over':
+            const start_width = canvas.width * imgs.start.width / 288;
+            const start_height = (imgs.start.height / imgs.start.width) * start_width;
+            const start_x = (canvas.width - start_width) / 2;
+            const start_y = (canvas.height - start_height) / 2 + canvas.height * 0.23;
+
+            if (!game_info.pause_loop
+                && (start_x <= mouse_x && mouse_x <= start_x + start_width)
+                && (start_y <= mouse_y && mouse_y <= start_y + start_height)) {
+                game_info.pause_loop = true;
+
+                sfx.swooshing.currentTime = 0;
+                sfx.swooshing.play();
+
+                let frame = 0;
+                const frame_interval = 20;
+
+                function pageFadeOut() {
+                    if (frame <= frame_interval) {
+                        gameOverPage(5);
+                        ctx.fillStyle = `rgba(0, 0, 0, ${frame / frame_interval})`;
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        frame += game_info.delta_time * 60;
+                        requestAnimationFrame(pageFadeOut);
+                    } else {
+                        randomCostume();
+                        game_info.score = 0;
+                        game_info.bird.x = 0.19;
+                        game_info.bird.y = -0.05;
+                        game_info.bird.degree = 0,
+                        game_info.bird.velocity = 0,
+                        game_info.bird.frame_interval = 7;
+                        game_info.pipe.x0 = -1.59;
+                        game_info.pipe.x1 = -2.19;
+                        game_info.pipe.score0 = 1;
+                        game_info.pipe.score1 = 1;
+                        game_info.stage = 'get_ready';
+    
+                        function pageFadeIn() {
+                            if (frame <= frame_interval * 2) {
+                                getReadyPage();
+                                ctx.fillStyle = `rgba(0, 0, 0, ${2 - frame / frame_interval})`;
+                                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                frame += game_info.delta_time * 60;
+                                requestAnimationFrame(pageFadeIn);
+                            } else {
+                                game_info.pause_loop = false;
+                                gameLoop();
+                            }
+                        }
+                        pageFadeIn();
+                    }
+                }
+                pageFadeOut();
+            }
             break;
         default:
             console.error(`ERROR: Unknown game stage: ${game_info.stage}`);
