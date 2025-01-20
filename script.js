@@ -15,6 +15,7 @@ function resizeCanvas() {
 }
 
 resizeCanvas();
+console.log(`${canvas.width}, ${canvas.height}`);
 
 // sound effects preparation
 const BASE_SFX_PATH = 'sfx';
@@ -554,7 +555,7 @@ let game_info = {
             }
         },
         move() {
-            this.y -= this.velocity * game_info.delta_time * 30;
+            this.y -= this.velocity * game_info.delta_time * 60;
 
             if (this.y < -0.26) {
                 this.y = -0.26;
