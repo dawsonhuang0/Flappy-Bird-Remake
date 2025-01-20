@@ -541,7 +541,7 @@ let game_info = {
         max_velocity: 0.02,
         acceleration: 0.0006,
         fly() {
-            this.velocity = -0.0108;
+            this.velocity = -0.0108 * game_info.delta_time * 60;
 
             sfx.wing.currentTime = 0;
             sfx.wing.play();
