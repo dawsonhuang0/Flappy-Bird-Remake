@@ -541,20 +541,20 @@ let game_info = {
         max_velocity: 0.02,
         acceleration: 0.0006,
         fly() {
-            this.velocity = -0.0108 * game_info.delta_time * 60;
+            this.velocity = -0.0108 * game_info.delta_time;
 
             sfx.wing.currentTime = 0;
             sfx.wing.play();
         },
         fall() {
-            this.velocity += this.acceleration * game_info.delta_time * 60;
+            this.velocity += this.acceleration * game_info.delta_time;
 
             if (this.velocity > this.max_velocity) {
                 this.velocity = this.max_velocity;
             }
         },
         move() {
-            this.y -= this.velocity;
+            this.y -= this.velocity * 60;
 
             if (this.y < -0.26) {
                 this.y = -0.26;
@@ -677,7 +677,7 @@ function initPageInteraction() {
                 } else {
                     randomCostume();
                     game_info.bird.x = 0.19;
-                    game_info.bird.y = -0.03;
+                    game_info.bird.y = -0.05;
 
                     function pageFadeIn() {
                         if (frame <= frame_interval * 2) {
