@@ -209,14 +209,14 @@ function drawLargeScore() {
     const score = game_info.score.toString().split(''); 
     const digits_width_offset = [6, 5, 5, 4, 5, 5, 4, 4, 5, 5];
     const digits_width
-    = score.map(item => locateObject(imgs.large_num[parseInt(item)]).obj_width
-                                     - digits_width_offset[parseInt(item)]);
+    = score.map(item => locateObject(imgs.large_num[parseInt(item, 10)]).obj_width
+                                     - digits_width_offset[parseInt(item, 10)]);
 
     const total_width = digits_width.reduce((sum, width) => sum + width, 0);
     let current_x = (canvas.width - total_width) / 2;
 
     score.forEach((digit, index) => {
-        const digit_obj = imgs.large_num[parseInt(digit)];
+        const digit_obj = imgs.large_num[parseInt(digit, 10)];
         const {obj_width, obj_height} = locateObject(digit_obj);
 
         ctx.drawImage(digit_obj, current_x, canvas.height * 0.115, obj_width,
@@ -232,7 +232,7 @@ function drawSmallScore(score = 0, y = 0) {
     score_array.reverse().forEach((item, index, array) => {
         if (item === '1') position_x -= 0.006 + (index === 0? 0: 0.002);
 
-        drawObject(imgs.small_num[parseInt(item)], position_x, y);
+        drawObject(imgs.small_num[parseInt(item, 10)], position_x, y);
 
         position_x += 0.058;
         if (index < array.length - 1 && item === '1') {
@@ -409,6 +409,11 @@ function gamingOver() {
                                                 frame += game_info.delta_time * 60;
                                                 requestAnimationFrame(scoreAnimation);
                                             } else {
+                                                if (game_info.score > game_info.best_score) {
+                                                    game_info.break_record = true;
+                                                    game_info.best_score = game_info.score;
+                                                    localStorage.setItem('best_score', game_info.best_score);
+                                                }
                                                 game_info.pause_loop = false;
                                                 gameLoop();
                                             }
@@ -512,8 +517,8 @@ function gameOverPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
         drawObject(imgs.board, 0, -Math.pow(1 - progress, 3));
     }
 
-    // draw medal
-    if ((tran === 0 || tran === 5 || tran === 6) && game_info.score >= 10) {
+    // draw medal and glitter
+    if ((tran === 0 || tran === 6) && game_info.score >= 10) {
         const level = game_info.score < 20? 0:
                       game_info.score < 30? 1:
                       game_info.score < 40? 2: 3;
@@ -543,6 +548,7 @@ function gameOverPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
     }
     if (tran === 0 || tran === 6) {
         drawSmallScore(game_info.score, 0.03);
+        if (game_info.break_record) drawObject(imgs.new, -0.134, -0.012);
         drawSmallScore(game_info.best_score, -0.052);
     }
 
@@ -594,6 +600,7 @@ let game_info = {
     stage: 'init',
     score: 0,
     best_score: 0,
+    break_record: false,
     bg: 0,
     bird: {
         // physic properties
@@ -854,6 +861,7 @@ function otherInteraction(event) {
                     } else {
                         randomCostume();
                         game_info.score = 0;
+                        game_info.break_record = false;
                         game_info.bird.x = 0.19;
                         game_info.bird.y = -0.05;
                         game_info.bird.degree = 0,
@@ -889,6 +897,13 @@ function otherInteraction(event) {
 }
 
 canvas.addEventListener('mousedown', initPageInteraction);
+
+// fetch best score if exist in local storage
+if (localStorage.getItem('best_score') === null) {
+    localStorage.setItem('best_score', 0);
+} else {
+    game_info.best_score = parseInt(localStorage.getItem('best_score'), 10);
+}
 
 // game preparation
 preloadSFX(() => {
