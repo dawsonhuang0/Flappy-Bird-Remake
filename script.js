@@ -226,6 +226,25 @@ function drawLargeScore() {
     });
 }
 
+function drawSmallScore(score = 0, y = 0) {
+    const score_array = score.toString().split(''); 
+    let position_x = -0.292;
+    score_array.reverse().forEach((item, index, array) => {
+        if (item === '1') position_x -= 0.006 + (index === 0? 0: 0.002);
+
+        drawObject(imgs.small_num[parseInt(item)], position_x, y);
+
+        position_x += 0.058;
+        if (index < array.length - 1 && item === '1') {
+            if (array[index + 1] === '1') {
+                position_x -= 0.006;
+            } else {
+                position_x -= 0.008;
+            }
+        }
+    });
+}
+
 // draw start page
 function initPage(tran = 0) {
     // draw background
@@ -381,13 +400,22 @@ function gamingOver() {
                                         frame += game_info.delta_time * 60;
                                         requestAnimationFrame(scoreBoardFlyIn);
                                     } else {
-                                        setTimeout(() => {
-                                            game_info.pause_loop = false;
-                                            gameLoop();
-                                        }, 100);
+                                        frame = 0;
+                                        frame_interval = 20;
+
+                                        function scoreAnimation() {
+                                            if (frame <= frame_interval) {
+                                                gameOverPage(5, frame, frame_interval);
+                                                frame += game_info.delta_time * 60;
+                                                requestAnimationFrame(scoreAnimation);
+                                            } else {
+                                                game_info.pause_loop = false;
+                                                gameLoop();
+                                            }
+                                        }
+                                        scoreAnimation();
                                     }
                                 }
-
                                 scoreBoardFlyIn();
                             }, 500);
                         }
@@ -459,7 +487,7 @@ function gameOverPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
     ctx.restore();
 
     // draw game over
-    if (tran === 0 || tran === 4 || tran === 5) drawObject(imgs.over, 0, 0.2);
+    if (tran === 0 || tran === 4 || tran === 5 || tran === 6) drawObject(imgs.over, 0, 0.2);
     if (tran === 3) {
         const half_frame_ratio = tran_frame / (tran_frame_interval / 2);
         const is_HFR_over_1 = half_frame_ratio > 1;
@@ -471,35 +499,51 @@ function gameOverPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
 
     // draw start button
     if (tran === 0) drawObject(imgs.start, 0, -0.23);
-    if (tran === 5) drawObject(imgs.start, 0, -0.237);
+    if (tran === 6) drawObject(imgs.start, 0, -0.237);
 
     // draw land
     drawObject(imgs.land, game_info.land.x0, -0.391);
     drawObject(imgs.land, game_info.land.x1, -0.391);
 
     // draw score board
-    if (tran === 0 || tran === 5) drawObject(imgs.board);
+    if (tran === 0 || tran === 5 || tran === 6) drawObject(imgs.board);
     if (tran === 4) {
         const progress = Math.min(tran_frame / tran_frame_interval, 1);
         drawObject(imgs.board, 0, -Math.pow(1 - progress, 3));
     }
 
     // draw medal
-    if ((tran === 0 || tran === 5) && game_info.score >= 10) {
+    if ((tran === 0 || tran === 5 || tran === 6) && game_info.score >= 10) {
         const level = game_info.score < 20? 0:
                       game_info.score < 30? 1:
                       game_info.score < 40? 2: 3;
         drawObject(imgs.medal[level], 0.226, -0.01);
 
-        if (game_info.glitter.costume === 0 && !(game_info.glitter.is_costume_increasing)) {
-            game_info.glitter.x = 0.13 + Math.random() * 0.19;
-            game_info.glitter.y = 0.044 - Math.random() * 0.105;
-            game_info.glitter.is_costume_increasing = true;
-        }
-
         drawObject(imgs.glitter[game_info.glitter.costume], game_info.glitter.x, game_info.glitter.y);
 
         game_info.glitter.next_glitter();
+
+        if (game_info.glitter.costume < 0 && !(game_info.glitter.is_costume_increasing)) {
+            game_info.glitter.x = 0.13 + Math.random() * 0.19;
+            game_info.glitter.y = 0.044 - Math.random() * 0.105;
+            game_info.glitter.costume = 0;
+            game_info.glitter.is_costume_increasing = true;
+        }
+    }
+
+    // draw score
+    if (tran === 4) {
+        const progress = Math.min(tran_frame / tran_frame_interval, 1);
+        drawSmallScore(0, -Math.pow(1 - progress, 3) + 0.03);
+        drawSmallScore(game_info.best_score, -Math.pow(1 - progress, 3) - 0.052);
+    }
+    if (tran === 5) {
+        drawSmallScore(Math.floor(game_info.score * tran_frame / tran_frame_interval), 0.03);
+        drawSmallScore(game_info.best_score, -0.052);
+    }
+    if (tran === 0 || tran === 6) {
+        drawSmallScore(game_info.score, 0.03);
+        drawSmallScore(game_info.best_score, -0.052);
     }
 
     // draw white flash
@@ -548,7 +592,7 @@ let game_info = {
     // basic properties
     pause_loop: false,
     stage: 'init',
-    score: 40,
+    score: 0,
     best_score: 0,
     bg: 0,
     bird: {
@@ -664,7 +708,7 @@ let game_info = {
         costume: 0,
         is_costume_increasing: false,
         frame: 0,
-        frame_interval: 7,
+        frame_interval: 5,
         next_glitter() {
             if (this.frame >= this.frame_interval) {
                 if (this.is_costume_increasing) {
@@ -802,7 +846,7 @@ function otherInteraction(event) {
 
                 function pageFadeOut() {
                     if (frame <= frame_interval) {
-                        gameOverPage(5);
+                        gameOverPage(6);
                         ctx.fillStyle = `rgba(0, 0, 0, ${frame / frame_interval})`;
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         frame += game_info.delta_time * 60;
