@@ -517,13 +517,14 @@ function gameOverPage(tran = 0, tran_frame = 0, tran_frame_interval = 30) {
         drawObject(imgs.board, 0, -Math.pow(1 - progress, 3));
     }
 
-    // draw medal and glitter
+    // draw medal
     if ((tran === 0 || tran === 6) && game_info.score >= 10) {
         const level = game_info.score < 20? 0:
                       game_info.score < 30? 1:
                       game_info.score < 40? 2: 3;
         drawObject(imgs.medal[level], 0.226, -0.01);
 
+        // draw glitter
         drawObject(imgs.glitter[game_info.glitter.costume], game_info.glitter.x, game_info.glitter.y);
 
         game_info.glitter.next_glitter();
