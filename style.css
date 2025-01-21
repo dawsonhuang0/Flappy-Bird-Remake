@@ -15,7 +15,6 @@ body {
     width: auto;
     height: 98vh;
     aspect-ratio: 9 / 16;
-    border: 2px solid red;
 }
 
 @media (max-aspect-ratio: 9 / 16) {
