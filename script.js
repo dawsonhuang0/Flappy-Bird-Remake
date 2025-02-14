@@ -897,20 +897,20 @@ function otherInteraction(event) {
     }
 }
 
-canvas.addEventListener('mousedown', initPageInteraction);
-
-// fetch best score if exist in local storage
-if (localStorage.getItem('best_score') === null) {
-    localStorage.setItem('best_score', 0);
-} else {
-    game_info.best_score = parseInt(localStorage.getItem('best_score'), 10);
-}
-
 // game preparation
 preloadSFX(() => {
     console.log('Sound Effects Loaded')
     preloadImages(() => {
         console.log('Images Loaded');
+        canvas.addEventListener('mousedown', initPageInteraction);
+
+        // fetch best score if exist in local storage
+        if (localStorage.getItem('best_score') === null) {
+            localStorage.setItem('best_score', 0);
+        } else {
+            game_info.best_score = parseInt(localStorage.getItem('best_score'), 10);
+        }
+        
         // game start
         randomCostume();
         gameLoop();
